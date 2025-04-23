@@ -150,6 +150,27 @@ def format_seconds(seconds):
     minutes, secs = divmod(seconds, 60)
     return f"{minutes:02d}:{secs:02d}"
 
+def format_duration(total_seconds):
+    """Format seconds into a human-readable string including days, hours, minutes, seconds."""
+    if total_seconds < 0:
+        return "Invalid duration"
+    if total_seconds == 0:
+        return "0 seconds"
+    total_seconds = int(round(total_seconds))
+    days, remainder = divmod(total_seconds, 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    parts = []
+    if days > 0:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes > 0:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if seconds > 0 or not parts:
+        parts.append(f"{seconds} second{'s' if seconds != 1 else ''}")
+    return ", ".join(parts)
+
 def generate_default_filename(base_name="output"):
     """Generates a default filename with a timestamp."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -182,6 +203,6 @@ def save_output_to_file(content_generator, default_filename_base="output"):
 
 __all__ = [
     'clear_screen', 'print_banner', 'get_key', 'format_time_display',
-    'format_seconds', 'console', 'MAIN_STYLE', 'HIGHLIGHT_STYLE',
+    'format_seconds', 'format_duration', 'console', 'MAIN_STYLE', 'HIGHLIGHT_STYLE',
     'HACKER_GREEN', 'HACKER_BG', 'BORDER_STYLE', 'save_output_to_file' # Add save function
 ]

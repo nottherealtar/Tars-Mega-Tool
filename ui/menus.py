@@ -23,6 +23,7 @@ from utils import update_checker
 from utils import logging as logging_utils  # Use alias to avoid name clash
 from utils import calendar_scheduling
 from utils import ip_lookup  # Import the new module
+from utils import download_calculator
 
 def arrow_menu(title, options):
     """Display a menu with arrow key and WASD navigation"""
@@ -156,6 +157,7 @@ def features_menu(current_version):  # Accept current_version
             "Shutdown / Restart / Timer",  # Combined related items
             "Network Tools",
             "Process Utilities",  # Added Process menu
+            "Download Time Calculator",  # Added option
             "View Logs",
             "Check for Updates",
             "Back to Main Menu"
@@ -168,9 +170,11 @@ def features_menu(current_version):  # Accept current_version
             network_tools_menu()
         elif choice == 2:
             process_utilities_menu()  # Call new process menu
-        elif choice == 3:
-            logging_utils.view_logs()  # Use the imported view_logs
+        elif choice == 3:  # Download Time Calculator
+            download_calculator.display_download_time_calculator()
         elif choice == 4:
+            logging_utils.view_logs()  # Use the imported view_logs
+        elif choice == 5:
             # --- Update Check Display ---
             clear_screen()
             print_banner()
@@ -208,7 +212,7 @@ def features_menu(current_version):  # Accept current_version
             clear_screen()
             # --- End Update Check Display ---
 
-        elif choice == 5 or choice == -1:
+        elif choice == 6 or choice == -1:
             return
 
 def network_tools_menu():
