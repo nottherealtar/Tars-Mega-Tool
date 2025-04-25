@@ -73,8 +73,10 @@ def parse_timer_input(timer_input):
         raise ValueError(f"Error parsing timer input: {str(e)}")
 
 
-def set_timer_rich(action):
-    """Set a timer using Rich UI, including input validation and 'back' option."""
+def set_timer_rich(action, preset_seconds=None):
+    """Set a timer using Rich UI, including input validation and 'back' option.
+    If preset_seconds is provided, skip user prompt and use that value directly.
+    """
     global timer_active, end_time, timer_type, timer_thread
 
     clear_screen()
@@ -83,34 +85,37 @@ def set_timer_rich(action):
     console.print(Align.center(title))
     console.print()
 
-    while True: # Loop for input validation
-        prompt_text = Text("Enter time (e.g., 30m, 2h, 1h 30m 15s, 90) or type 'back':", style=MAIN_STYLE)
-        console.print(Align.center(prompt_text))
-        console.print()
-        time_input = Prompt.ask("[bold]Time[/bold]")
-
-        if time_input.lower() == "back":
-            clear_screen()
-            return
-        if time_input.lower() == "exit":
-             clear_screen()
-             console.print(Align.center(Text("\nGoodbye!", style=f"bold {HACKER_GREEN}")))
-             sys.exit()
-
-        try:
-            total_seconds = parse_timer_input(time_input)
-            break # Valid input, exit loop
-
-        except ValueError as e:
-            error_msg = Text(f"\n{str(e)}. Please use formats like 10s, 5m, 1h 30m, 90 or type 'back'.", style="bold red")
-            console.print(Align.center(error_msg))
-            time.sleep(2.5)
-            # Clear the error and prompt again
-            clear_screen()
-            print_banner()
-            console.print(Align.center(title))
+    if preset_seconds is not None:
+        total_seconds = int(preset_seconds)
+    else:
+        while True: # Loop for input validation
+            prompt_text = Text("Enter time (e.g., 30m, 2h, 1h 30m 15s, 90) or type 'back':", style=MAIN_STYLE)
+            console.print(Align.center(prompt_text))
             console.print()
-            continue # Re-prompt the user
+            time_input = Prompt.ask("[bold]Time[/bold]")
+
+            if time_input.lower() == "back":
+                clear_screen()
+                return
+            if time_input.lower() == "exit":
+                 clear_screen()
+                 console.print(Align.center(Text("\nGoodbye!", style=f"bold {HACKER_GREEN}")))
+                 sys.exit()
+
+            try:
+                total_seconds = parse_timer_input(time_input)
+                break # Valid input, exit loop
+
+            except ValueError as e:
+                error_msg = Text(f"\n{str(e)}. Please use formats like 10s, 5m, 1h 30m, 90 or type 'back'.", style="bold red")
+                console.print(Align.center(error_msg))
+                time.sleep(2.5)
+                # Clear the error and prompt again
+                clear_screen()
+                print_banner()
+                console.print(Align.center(title))
+                console.print()
+                continue # Re-prompt the user
 
     # Cancel any existing timer *before* setting the new one
     if timer_active:
@@ -124,7 +129,6 @@ def set_timer_rich(action):
         print_banner()
         console.print(Align.center(title))
         console.print()
-
 
     console.print() # Add space before progress bar
 

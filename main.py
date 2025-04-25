@@ -45,7 +45,7 @@ HACKER_GREEN = "bright_green" # Keep for potential exit message style
 console = Console(color_system="auto", highlight=False)
 
 # --- Import Main Menu ---
-# Import the main menu function from the UI module
+# Import the main menu function from the UI module (system optimization features removed)
 from ui.menus import main_menu
 
 # --- Main Execution ---
@@ -80,6 +80,9 @@ def main():
          os.system('cls' if os.name == 'nt' else 'clear')
          console.print(f"[bold red]Import Error:[/bold red]")
          console.print(f"[red]{str(ie)}[/red]")
+         # Print missing module name if available
+         if hasattr(ie, 'name'):
+             console.print(f"[yellow]Missing module: {ie.name}[/yellow]")
          console.print("\n[yellow]A required module is missing.")
          console.print("[yellow]Please ensure all dependencies are installed (check requirements.txt).[/yellow]")
          sys.exit(1)

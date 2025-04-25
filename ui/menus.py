@@ -15,6 +15,12 @@ from utils.helpers import (
     MAIN_STYLE, HIGHLIGHT_STYLE, HACKER_GREEN, BORDER_STYLE
 )
 
+try:
+    from utils.helpers import select_menu_option
+    HAS_ARROW_MENU = True
+except ImportError:
+    HAS_ARROW_MENU = False
+
 # Import feature functions from their respective modules
 from utils import shutdown_timer
 from utils import network_tools
