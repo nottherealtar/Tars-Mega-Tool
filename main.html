@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tars Utilities Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .output-terminal {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e293b;
+            color: #f8fafc;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .blink-cursor {
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <div class="bg-blue-500 text-white p-3 rounded-lg mr-4">
+                    <i class="fas fa-tools text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">Tars Utilities Tool</h1>
+                    <p class="text-slate-600">System & Network Management Suite</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="logsBtn" class="bg-slate-200 hover:bg-slate-300 px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-history mr-2"></i> View Logs
+                </button>
+                <button id="updateBtn" class="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-sync-alt mr-2"></i> Check Updates
+                </button>
+            </div>
+        </header>
+        
+        <!-- Progress bar -->
+        <div id="progressBar" class="progress-bar w-0 mb-6"></div>
+        
+        <!-- Main content -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 bg-white rounded-xl shadow-md p-6">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-slate-800">Quick Actions</h2>
+                    <div class="space-y-2">
+                        <button class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-left flex items-center">
+                            <i class="fas fa-power-off mr-3"></i> Immediate Shutdown
+                        </button>
+                        <button class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-left flex items-center">
+                            <i class="fas fa-redo mr-3"></i> Immediate Restart
+                        </button>
+                        <button class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-left flex items-center">
+                            <i class="fas fa-microchip mr-3"></i> Restart to BIOS
+                        </button>
+                        <button class="w-full bg-red-50 hover:bg-red-100 text-red-700 px-4 py-2 rounded-lg text-left flex items-center">
+                            <i class="fas fa-times-circle mr-3"></i> Cancel Timers
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-xl font-semibold mb-4 text-slate-800">System Status</h2>
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-slate-600">Active Timers:</span>
+                            <span class="font-medium" id="activeTimers">0</span>
+                        </div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-slate-600">Running Processes:</span>
+                            <span class="font-medium" id="runningProcesses">87</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Network Status:</span>
+                            <span class="font-medium text-green-600">Online</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main panel -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Tabs -->
+                <div class="bg-white rounded-xl shadow-md p-1">
+                    <div class="flex border-b border-slate-200">
+                        <button class="tab-button px-6 py-3 text-slate-600 hover:text-blue-600" data-tab="system">System</button>
+                        <button class="tab-button px-6 py-3 text-slate-600 hover:text-blue-600 tab-active" data-tab="network">Network</button>
+                        <button class="tab-button px-6 py-3 text-slate-600 hover:text-blue-600" data-tab="process">Processes</button>
+                        <button class="tab-button px-6 py-3 text-slate-600 hover:text-blue-600" data-tab="utilities">Utilities</button>
+                    </div>
+                </div>
+                
+                <!-- Tab content -->
+                <div id="tabContent">
+                    <!-- System Management Tab (hidden by default) -->
+                    <div id="systemTab" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Timed Actions -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-clock text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Timed Actions</h3>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Action Type</label>
+                                        <select class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option>Shutdown</option>
+                                            <option>Restart</option>
+                                            <option>BIOS Restart</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Time Format</label>
+                                        <div class="flex space-x-2">
+                                            <button class="flex-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-lg">Minutes</button>
+                                            <button class="flex-1 bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">Seconds</button>
+                                            <button class="flex-1 bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">Specific Time</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Duration</label>
+                                        <input type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., 90 or 1h 30m">
+                                    </div>
+                                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                        Schedule Action
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Immediate Actions -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-green-100 text-green-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-bolt text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Immediate Actions</h3>
+                                </div>
+                                <div class="space-y-3">
+                                    <button class="w-full bg-red-100 hover:bg-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
+                                        <span><i class="fas fa-power-off mr-2"></i> Shutdown Now</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <button class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center justify-between">
+                                        <span><i class="fas fa-redo mr-2"></i> Restart Now</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <button class="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 px-4 py-3 rounded-lg flex items-center justify-between">
+                                        <span><i class="fas fa-microchip mr-2"></i> Restart to BIOS</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Timer Status -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-yellow-100 text-yellow-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-hourglass-half text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Timer Status</h3>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-4">
+                                    <p class="text-slate-600 text-center py-8">No active timers</p>
+                                </div>
+                                <button class="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg">
+                                    Refresh Status
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Network Tools Tab (visible by default) -->
+                    <div id="networkTab">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- IP Information -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-network-wired text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">IP Information</h3>
+                                </div>
+                                <div class="space-y-4">
+                                    <button class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg flex items-center justify-between">
+                                        <span><i class="fas fa-laptop mr-2"></i> Show Local IP</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <button class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg flex items-center justify-between">
+                                        <span><i class="fas fa-globe mr-2"></i> Show Public IP</span>
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">IP/Domain Lookup</label>
+                                        <div class="flex">
+                                            <input type="text" class="flex-1 border border-slate-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="IP or domain">
+                                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Diagnostics -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-green-100 text-green-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-heartbeat text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Network Diagnostics</h3>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Host to Test</label>
+                                        <div class="flex">
+                                            <input type="text" class="flex-1 border border-slate-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="IP or domain" value="example.com">
+                                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg flex flex-col items-center">
+                                            <i class="fas fa-wifi mb-1"></i>
+                                            <span class="text-xs">Ping</span>
+                                        </button>
+                                        <button class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg flex flex-col items-center">
+                                            <i class="fas fa-project-diagram mb-1"></i>
+                                            <span class="text-xs">Traceroute</span>
+                                        </button>
+                                        <button class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg flex flex-col items-center">
+                                            <i class="fas fa-door-open mb-1"></i>
+                                            <span class="text-xs">Port Scan</span>
+                                        </button>
+                                    </div>
+                                    <div id="portRange" class="hidden">
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Port Range</label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" class="w-20 border border-slate-300 rounded-lg px-3 py-2" placeholder="Start" value="1">
+                                            <span>to</span>
+                                            <input type="number" class="w-20 border border-slate-300 rounded-lg px-3 py-2" placeholder="End" value="100">
+                                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                                Scan
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Output Terminal -->
+                            <div class="md:col-span-2 bg-white rounded-xl shadow-md p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-semibold">Output</h3>
+                                    <div class="flex space-x-2">
+                                        <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                        <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="output-terminal rounded-lg p-4">
+                                    <div class="text-green-400">$ tars network ping example.com</div>
+                                    <div class="my-2">
+                                        <div>Pinging example.com [93.184.216.34] with 32 bytes of data:</div>
+                                        <div>Reply from 93.184.216.34: bytes=32 time=12ms TTL=56</div>
+                                        <div>Reply from 93.184.216.34: bytes=32 time=11ms TTL=56</div>
+                                        <div>Reply from 93.184.216.34: bytes=32 time=13ms TTL=56</div>
+                                        <div>Reply from 93.184.216.34: bytes=32 time=12ms TTL=56</div>
+                                    </div>
+                                    <div class="text-green-400">
+                                        <div>Ping statistics for 93.184.216.34:</div>
+                                        <div>Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),</div>
+                                        <div>Approximate round trip times in milli-seconds:</div>
+                                        <div>Minimum = 11ms, Maximum = 13ms, Average = 12ms</div>
+                                    </div>
+                                    <div class="text-green-400 mt-4">$ <span class="blink-cursor">_</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Process Management Tab (hidden by default) -->
+                    <div id="processTab" class="hidden">
+                        <div class="grid grid-cols-1 gap-6">
+                            <!-- Process List -->
+                            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                                <div class="p-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-4">
+                                            <i class="fas fa-tasks text-xl"></i>
+                                        </div>
+                                        <h3 class="text-xl font-semibold">Running Processes</h3>
+                                    </div>
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="relative flex-1 max-w-md">
+                                            <input type="text" class="w-full border border-slate-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search processes...">
+                                            <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                                        </div>
+                                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg ml-2">
+                                            Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-slate-200">
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">PID</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">CPU %</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Memory</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-slate-200">
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">1284</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">chrome.exe</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">12.5%</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">450 MB</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                                    <button class="text-red-600 hover:text-red-900 mr-3">
+                                                        <i class="fas fa-times-circle"></i> End
+                                                    </button>
+                                                    <button class="text-blue-600 hover:text-blue-900">
+                                                        <i class="fas fa-chart-line"></i> Monitor
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">872</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">explorer.exe</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">3.2%</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">120 MB</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                                    <button class="text-red-600 hover:text-red-900 mr-3">
+                                                        <i class="fas fa-times-circle"></i> End
+                                                    </button>
+                                                    <button class="text-blue-600 hover:text-blue-900">
+                                                        <i class="fas fa-chart-line"></i> Monitor
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">456</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">spotify.exe</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">8.7%</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">320 MB</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                                    <button class="text-red-600 hover:text-red-900 mr-3">
+                                                        <i class="fas fa-times-circle"></i> End
+                                                    </button>
+                                                    <button class="text-blue-600 hover:text-blue-900">
+                                                        <i class="fas fa-chart-line"></i> Monitor
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="bg-slate-50 px-6 py-4 flex items-center justify-between border-t border-slate-200">
+                                    <div class="text-sm text-slate-500">
+                                        Showing <span class="font-medium">1</span> to <span class="font-medium">3</span> of <span class="font-medium">87</span> processes
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="bg-white border border-slate-300 text-slate-700 px-3 py-1 rounded-lg">
+                                            Previous
+                                        </button>
+                                        <button class="bg-blue-600 text-white px-3 py-1 rounded-lg">
+                                            1
+                                        </button>
+                                        <button class="bg-white border border-slate-300 text-slate-700 px-3 py-1 rounded-lg">
+                                            2
+                                        </button>
+                                        <button class="bg-white border border-slate-300 text-slate-700 px-3 py-1 rounded-lg">
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Process Monitor -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-green-100 text-green-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-chart-line text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Process Monitor</h3>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-4">
+                                    <p class="text-slate-600 text-center py-8">No processes being monitored</p>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Monitor Process</label>
+                                    <div class="flex">
+                                        <input type="text" class="flex-1 border border-slate-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Process name or PID">
+                                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg">
+                                            Start Monitoring
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Utilities Tab (hidden by default) -->
+                    <div id="utilitiesTab" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Log Viewer -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-history text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Activity Logs</h3>
+                                </div>
+                                <div class="output-terminal rounded-lg p-4 h-64 overflow-y-auto">
+                                    <div class="text-slate-400 text-sm">[2023-07-15 09:23:45] INFO: Application started</div>
+                                    <div class="text-slate-400 text-sm">[2023-07-15 09:24:12] INFO: Network scan completed for 192.168.1.1</div>
+                                    <div class="text-slate-400 text-sm">[2023-07-15 09:25:03] WARNING: High CPU usage detected (92%)</div>
+                                    <div class="text-slate-400 text-sm">[2023-07-15 09:30:18] INFO: Process chrome.exe (PID 1284) terminated</div>
+                                    <div class="text-slate-400 text-sm">[2023-07-15 09:35:42] INFO: Shutdown scheduled in 30 minutes</div>
+                                </div>
+                                <div class="flex justify-end mt-4 space-x-2">
+                                    <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg">
+                                        <i class="fas fa-trash-alt mr-2"></i> Clear
+                                    </button>
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                        <i class="fas fa-save mr-2"></i> Save Log
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Update Checker -->
+                            <div class="bg-white rounded-xl shadow-md p-6 tool-card transition-all duration-300">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-green-100 text-green-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-sync-alt text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Updates</h3>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div>
+                                            <div class="font-medium">Current Version</div>
+                                            <div class="text-slate-600">v1.2.0</div>
+                                        </div>
+                                        <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                                            Up to date
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-slate-200 pt-3">
+                                        <div class="font-medium mb-1">Latest Version</div>
+                                        <div class="text-slate-600 mb-3">v1.2.0 (2023-07-10)</div>
+                                        <div class="text-sm text-slate-500">
+                                            <i class="fas fa-info-circle mr-1"></i> Last checked: 2 hours ago
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                    Check for Updates
+                                </button>
+                            </div>
+                            
+                            <!-- Settings -->
+                            <div class="md:col-span-2 bg-white rounded-xl shadow-md p-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-4">
+                                        <i class="fas fa-cog text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold">Settings</h3>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="font-medium mb-3">General</h4>
+                                        <div class="space-y-4">
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-slate-700">Auto-check updates</label>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="sr-only peer" checked>
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-slate-700">Save output to file</label>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="sr-only peer">
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <label class="text-slate-700">Dark mode</label>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" class="sr-only peer">
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium mb-3">Advanced</h4>
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Default Port Range</label>
+                                                <div class="flex items-center space-x-2">
+                                                    <input type="number" class="w-20 border border-slate-300 rounded-lg px-3 py-2" placeholder="Start" value="1">
+                                                    <span>to</span>
+                                                    <input type="number" class="w-20 border border-slate-300 rounded-lg px-3 py-2" placeholder="End" value="100">
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">Ping Timeout (ms)</label>
+                                                <input type="number" class="w-full border border-slate-300 rounded-lg px-3 py-2" value="1000">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end mt-6">
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                        Save Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-8 py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-slate-600 mb-4 md:mb-0">
+                    <p>Tars Utilities Tool v1.2.0</p>
+                    <p class="text-sm">© 2023 Tars Development Team. All rights reserved.</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-slate-600 hover:text-blue-600">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-slate-600 hover:text-blue-600">
+                        <i class="fab fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-slate-600 hover:text-blue-600">
+                        <i class="fas fa-question-circle text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('tab-active');
+                });
+                
+                // Add active class to clicked button
+                button.classList.add('tab-active');
+                
+                // Hide all tabs
+                document.querySelectorAll('#tabContent > div').forEach(tab => {
+                    tab.classList.add('hidden');
+                });
+                
+                // Show selected tab
+                const tabId = button.getAttribute('data-tab') + 'Tab';
+                document.getElementById(tabId).classList.remove('hidden');
+                
+                // Simulate progress bar animation
+                animateProgressBar();
+            });
+        });
+        
+        // Port scan button shows port range inputs
+        document.querySelectorAll('.tool-card button').forEach(button => {
+            if (button.textContent.includes('Port Scan')) {
+                button.addEventListener('click', () => {
+                    const portRange = document.getElementById('portRange');
+                    portRange.classList.toggle('hidden');
+                    portRange.classList.add('slide-in');
+                });
+            }
+        });
+        
+        // Simulate progress bar animation
+        function animateProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.classList.remove('w-0');
+            progressBar.classList.add('w-full');
+            
+            setTimeout(() => {
+                progressBar.classList.remove('w-full');
+                progressBar.classList.add('w-0');
+            }, 1000);
+        }
+        
+        // Check for updates button
+        document.getElementById('updateBtn').addEventListener('click', () => {
+            animateProgressBar();
+            // Simulate update check delay
+            setTimeout(() => {
+                alert('You are running the latest version (v1.2.0)');
+            }, 1500);
+        });
+        
+        // View logs button
+        document.getElementById('logsBtn').addEventListener('click', () => {
+            // Switch to utilities tab and show logs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('tab-active');
+                if (btn.getAttribute('data-tab') === 'utilities') {
+                    btn.classList.add('tab-active');
+                }
+            });
+            
+            document.querySelectorAll('#tabContent > div').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            document.getElementById('utilitiesTab').classList.remove('hidden');
+            animateProgressBar();
+            
+            // Scroll to logs section
+            setTimeout(() => {
+                document.querySelector('.output-terminal').scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        });
+        
+        // Initialize with progress bar animation
+        window.addEventListener('load', animateProgressBar);
+    </script>
+</body>
+</html>

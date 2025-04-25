@@ -12,8 +12,8 @@ console = Console(color_system="auto", highlight=False)
 
 # --- Configuration ---
 # TODO: Replace with your actual GitHub username and repository name
-GITHUB_USERNAME = "YOUR_USERNAME"
-GITHUB_REPONAME = "YOUR_REPONAME"
+GITHUB_USERNAME = "nottherealtar"
+GITHUB_REPONAME = "Tars-Mega-Tool"
 # --- End Configuration ---
 
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPONAME}/releases/latest"
@@ -30,10 +30,16 @@ def check_for_updates(current_v_str):
 
             if latest_version and version.parse(latest_version) > version.parse(current_v_str):
                 download_url = None
-                # Find the asset named 'TarsUtilitiesTool.exe' (adjust if needed)
-                asset_name_expected = 'TarsUtilitiesTool.exe'
+                # Find the asset with a name starting with 'TarsUtilitiesTool' and ending with '.exe'
+                asset_name_expected_prefix = 'TarsUtilitiesTool'
+                asset_name_expected_suffix = '.exe'
                 for asset in data.get('assets', []):
-                    if asset.get('name') == asset_name_expected:
+                    asset_name = asset.get('name', '')
+                    if asset_name.startswith(asset_name_expected_prefix) and asset_name.endswith(asset_name_expected_suffix):
+                        download_url = asset.get('browser_download_url')
+                        break
+                for asset in data.get('assets', []):
+                    if asset.get('name') == asset_name:
                         download_url = asset.get('browser_download_url')
                         break
 

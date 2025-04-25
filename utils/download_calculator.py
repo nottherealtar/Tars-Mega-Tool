@@ -1,6 +1,7 @@
 import re
 import time
 import sys
+from datetime import datetime, timedelta
 
 from rich.panel import Panel
 from rich.text import Text
@@ -11,6 +12,7 @@ from utils.helpers import (
     clear_screen, print_banner, get_key, console, format_duration,
     MAIN_STYLE, HIGHLIGHT_STYLE, HACKER_GREEN, BORDER_STYLE
 )
+from utils import shutdown_timer
 
 KB = 1024
 MB = 1024 * KB
@@ -109,18 +111,88 @@ def display_download_time_calculator():
     try:
         total_seconds = calculate_download_time(file_size_bytes, speed_bytes_per_sec)
         readable_time = format_duration(total_seconds)
+        finish_time = datetime.now() + timedelta(seconds=total_seconds)
+        finish_time_str = finish_time.strftime("%Y-%m-%d %H:%M:%S")
         result_text = Text.assemble(
             ("Estimated download time for a ", MAIN_STYLE),
             (f"{size_input}", HIGHLIGHT_STYLE),
             (" file at ", MAIN_STYLE),
             (f"{speed_input}", HIGHLIGHT_STYLE),
             (" is:\n\n", MAIN_STYLE),
-            (f"{readable_time}", f"bold {HACKER_GREEN}")
+            (f"{readable_time}", f"bold {HACKER_GREEN}"),
+            ("\n\n", MAIN_STYLE),
+            ("Estimated completion time: ", MAIN_STYLE),
+            (f"{finish_time_str}", HIGHLIGHT_STYLE)
         )
         console.print(Align.center(Panel(result_text, title="Calculation Result", border_style=BORDER_STYLE, padding=(1, 2))))
+        instruction = Text("Press ENTER to continue...", style=MAIN_STYLE)
+        console.print(Align.center(instruction))
+        while True:
+            key = get_key()
+            if key == "ENTER":
+                break
+            time.sleep(0.05)
+        clear_screen()
+        print_banner()
     except Exception as e:
         error_msg = Text(f"Calculation Error: {str(e)}", style="bold red")
         console.print(Align.center(error_msg))
+        console.print()
+        instruction = Text("Press any key to return...", style=MAIN_STYLE)
+        console.print(Align.center(instruction))
+        while get_key() is None:
+            time.sleep(0.50)
+        clear_screen()
+        return
+
+    # --- Arrow menu for post-download action ---
+    console.print()
+    from ui.menus import arrow_menu
+    timer_seconds = int(total_seconds) + 1200
+    buffer_time = format_duration(1200)
+    total_time_str = format_duration(timer_seconds)
+    # Show download time and buffer in the menu panel
+    menu_panel = Panel(
+        Text(
+            f"Download time: {readable_time}\n"
+            f"Buffer (grace period): {buffer_time}\n"
+            f"Total time until action: {total_time_str}\n\n"
+            "Choose what to do after the download completes:",
+            style=MAIN_STYLE
+        ),
+        border_style=BORDER_STYLE
+    )
+    console.print(Align.center(menu_panel))
+    options = [
+        "Shutdown after download (adds 20 min buffer)",
+        "Restart after download (adds 20 min buffer)",
+        "Do Nothing",
+        "Back"
+    ]
+    choice = arrow_menu("After Download Action", options)
+    if choice == 0 or choice == 1:
+        action = "shutdown" if choice == 0 else "restart"
+        # Show the download time and buffer in confirmation
+        confirm_panel = Panel(
+            Text(
+                f"Download time: {readable_time}\n"
+                f"Buffer (grace period): {buffer_time}\n"
+                f"Total time until {action}: {total_time_str}\n\n"
+                f"Schedule a {action} after this time?",
+                style=MAIN_STYLE
+            ),
+            border_style=BORDER_STYLE
+        )
+        console.print(Align.center(confirm_panel))
+        confirm_options = ["Yes", "No"]
+        confirm_choice = arrow_menu("Confirm Action", confirm_options)
+        if confirm_choice == 0:
+            # Call set_timer_rich with the calculated time, bypassing user input
+            shutdown_timer.set_timer_rich(action, preset_seconds=timer_seconds)
+            return
+
+    # --- End Arrow menu ---
+
     console.print()
     instruction = Text("Press any key to return...", style=MAIN_STYLE)
     console.print(Align.center(instruction))
