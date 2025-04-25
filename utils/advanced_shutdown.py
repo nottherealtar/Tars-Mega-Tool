@@ -11,6 +11,8 @@ from utils.logging import log_event
 
 console = Console(color_system="auto", highlight=False)
 
+# test commit message
+
 monitored_processes = []
 
 def select_running_process():
