@@ -4,6 +4,7 @@ import threading
 import platform
 import re
 import sys
+import subprocess
 from datetime import datetime, timedelta
 
 # Rich imports
@@ -150,28 +151,31 @@ def set_timer_rich(action, preset_seconds=None):
         # Actually set the timer
         try:
             if action == "shutdown":
-                os.system(f"shutdown -s -t {total_seconds}")
+                command = f"shutdown -s -t {total_seconds}"
             elif action == "restart":
-                os.system(f"shutdown -r -t {total_seconds}")
+                command = f"shutdown -r -t {total_seconds}"
             elif action == "bios":
                  if platform.system() == 'Windows':
-                     os.system(f"shutdown /r /fw /t {total_seconds}")
+                     command = f"shutdown /r /fw /t {total_seconds}"
                  else:
-                     # BIOS restart not standard on Linux/Mac via simple command
                      progress.stop() # Stop progress before printing error
                      console.print(Align.center(Text("\nRestart to BIOS is only supported on Windows.", style="yellow")))
                      time.sleep(2)
                      clear_screen()
                      return # Abort setting timer
 
+            # Execute the command in a visible console
+            console.print(f"[DEBUG] Executing command: {command}")
+            subprocess.run(command, shell=True, check=True)
+
             # Continue progress simulation
             for i in range(50, 101):
                 progress.update(task, completed=i)
                 time.sleep(0.01)
 
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
              progress.stop() # Stop progress before printing error
-             console.print(f"\n[bold red]Error executing shutdown command: {e}[/bold red]")
+             console.print(f"\n[bold red]Error executing command: {e}[/bold red]")
              time.sleep(2)
              clear_screen()
              return # Abort if command fails
@@ -212,8 +216,15 @@ def cancel_shutdown():
     print_banner()
 
     if timer_active:
-        # Cancel the Windows shutdown command first
-        os.system("shutdown -a")
+        try:
+            command = "shutdown -a"
+            console.print(f"[DEBUG] Executing command: {command}")
+            subprocess.run(command, shell=True, check=True)
+            console.print("[bold green]Shutdown timer canceled successfully![/bold green]")
+        except subprocess.CalledProcessError as e:
+            console.print(f"[bold red]Error canceling shutdown: {e}[/bold red]")
+            return False
+
         log_event(f"Cancelled {timer_type or 'timer'}") # Log cancellation
 
         # Signal the timer thread to stop

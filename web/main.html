@@ -6,6 +6,7 @@
     <title>Tars Utilities Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="text/javascript" src="/eel.js"></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -63,6 +64,13 @@
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+        }
+
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e5e7eb;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -591,6 +599,12 @@
                 </div>
             </div>
         </div>
+
+        <div class="mt-6 text-center">
+            <button id="versionBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Get Version</button>
+            <button id="platformBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg ml-4">Get Platform</button>
+        </div>
+        <div id="output" class="output hidden"></div>
     </div>
     
     <!-- Footer -->
@@ -624,47 +638,36 @@
                 document.querySelectorAll('.tab-button').forEach(btn => {
                     btn.classList.remove('tab-active');
                 });
-                
+
                 // Add active class to clicked button
                 button.classList.add('tab-active');
-                
+
                 // Hide all tabs
                 document.querySelectorAll('#tabContent > div').forEach(tab => {
                     tab.classList.add('hidden');
                 });
-                
+
                 // Show selected tab
                 const tabId = button.getAttribute('data-tab') + 'Tab';
                 document.getElementById(tabId).classList.remove('hidden');
-                
+
                 // Simulate progress bar animation
                 animateProgressBar();
             });
         });
-        
-        // Port scan button shows port range inputs
-        document.querySelectorAll('.tool-card button').forEach(button => {
-            if (button.textContent.includes('Port Scan')) {
-                button.addEventListener('click', () => {
-                    const portRange = document.getElementById('portRange');
-                    portRange.classList.toggle('hidden');
-                    portRange.classList.add('slide-in');
-                });
-            }
-        });
-        
+
         // Simulate progress bar animation
         function animateProgressBar() {
             const progressBar = document.getElementById('progressBar');
             progressBar.classList.remove('w-0');
             progressBar.classList.add('w-full');
-            
+
             setTimeout(() => {
                 progressBar.classList.remove('w-full');
                 progressBar.classList.add('w-0');
             }, 1000);
         }
-        
+
         // Check for updates button
         document.getElementById('updateBtn').addEventListener('click', () => {
             animateProgressBar();
@@ -673,7 +676,7 @@
                 alert('You are running the latest version (v1.2.0)');
             }, 1500);
         });
-        
+
         // View logs button
         document.getElementById('logsBtn').addEventListener('click', () => {
             // Switch to utilities tab and show logs
@@ -683,22 +686,157 @@
                     btn.classList.add('tab-active');
                 }
             });
-            
+
             document.querySelectorAll('#tabContent > div').forEach(tab => {
                 tab.classList.add('hidden');
             });
-            
+
             document.getElementById('utilitiesTab').classList.remove('hidden');
             animateProgressBar();
-            
+
             // Scroll to logs section
             setTimeout(() => {
                 document.querySelector('.output-terminal').scrollIntoView({ behavior: 'smooth' });
             }, 300);
         });
-        
+
         // Initialize with progress bar animation
         window.addEventListener('load', animateProgressBar);
+
+        // Timed Actions Integration
+        document.querySelectorAll('.tool-card button').forEach(button => {
+            if (button.textContent.trim() === "Schedule Action") {
+                button.addEventListener('click', async () => {
+                    try {
+                        const actionType = document.querySelector('.tool-card select').value.toLowerCase();
+                        const durationInput = document.querySelector('.tool-card input').value;
+                        console.log(`[DEBUG] Scheduling action: ${actionType}, duration: ${durationInput}`);
+                        const result = await eel.set_timer_js(actionType, durationInput)();
+                        alert(result.message || result.error);
+                        if (result.error) {
+                            console.error(`Error setting timer: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error(`[DEBUG] Unexpected error in Schedule Action: ${error}`);
+                    }
+                });
+            } else if (button.textContent.trim() === "Refresh Status") {
+                button.addEventListener('click', async () => {
+                    try {
+                        const status = await eel.get_timer_status_js()();
+                        const statusDiv = document.querySelector('.tool-card .bg-slate-50 p');
+                        if (status.active) {
+                            statusDiv.textContent = `Active Timer: ${status.action} in ${status.remaining}`;
+                        } else {
+                            statusDiv.textContent = 'No active timers';
+                        }
+                    } catch (error) {
+                        console.error(`Unexpected error in Refresh Status: ${error}`);
+                    }
+                });
+            } else if (button.textContent.trim() === "Cancel Timers") {
+                button.addEventListener('click', async () => {
+                    try {
+                        console.log("[DEBUG] Cancel Timers button clicked.");
+                        const result = await eel.cancel_timer_js()();
+                        if (result.error) {
+                            console.error(`[DEBUG] Error canceling timer: ${result.error}`);
+                            alert(`Error: ${result.error}`);
+                        } else {
+                            console.log("[DEBUG] Timer canceled successfully.");
+                            alert(result.message);
+                        }
+                    } catch (error) {
+                        console.error(`[DEBUG] Unexpected error in Cancel Timers: ${error}`);
+                        alert("An unexpected error occurred while canceling the timer.");
+                    }
+                });
+            }
+        });
+
+        // Immediate Actions Integration
+        document.querySelectorAll('.tool-card button').forEach(button => {
+            if (button.textContent.includes('Immediate Shutdown')) {
+                button.addEventListener('click', async () => {
+                    try {
+                        const result = await eel.set_timer_js('shutdown', '0')();
+                        alert(result.message || result.error);
+                        if (result.error) {
+                            console.error(`Error in Immediate Shutdown: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error(`Unexpected error in Immediate Shutdown: ${error}`);
+                    }
+                });
+            } else if (button.textContent.includes('Immediate Restart')) {
+                button.addEventListener('click', async () => {
+                    try {
+                        const result = await eel.set_timer_js('restart', '0')();
+                        alert(result.message || result.error);
+                        if (result.error) {
+                            console.error(`Error in Immediate Restart: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error(`Unexpected error in Immediate Restart: ${error}`);
+                    }
+                });
+            } else if (button.textContent.includes('Restart to BIOS')) {
+                button.addEventListener('click', async () => {
+                    try {
+                        const result = await eel.set_timer_js('bios', '0')();
+                        alert(result.message || result.error);
+                        if (result.error) {
+                            console.error(`Error in Restart to BIOS: ${result.error}`);
+                        }
+                    } catch (error) {
+                        console.error(`Unexpected error in Restart to BIOS: ${error}`);
+                    }
+                });
+            } else if (button.textContent.includes('Cancel Timers')) {
+                button.addEventListener('click', async () => {
+                    try {
+                        console.log("[DEBUG] Cancel Timers button clicked.");
+                        const result = await eel.cancel_timer_js()();
+                        if (result.error) {
+                            console.error(`[DEBUG] Error canceling timer: ${result.error}`);
+                            alert(`Error: ${result.error}`);
+                        } else {
+                            console.log("[DEBUG] Timer canceled successfully.");
+                            alert(result.message);
+                        }
+                    } catch (error) {
+                        console.error(`[DEBUG] Unexpected error in Cancel Timers: ${error}`);
+                        alert("An unexpected error occurred while canceling the timer.");
+                    }
+                });
+            }
+        });
+
+        // Get Version Button
+        document.getElementById('versionBtn').addEventListener('click', async () => {
+            try {
+                console.log("[DEBUG] Get Version button clicked.");
+                const version = await eel.get_version()();
+                alert(`Current Version: ${version}`);
+                console.log(`[DEBUG] Version received: ${version}`);
+            } catch (error) {
+                console.error(`[DEBUG] Error fetching version: ${error}`);
+                alert("An error occurred while fetching the version.");
+            }
+        });
+
+        // Get Platform Button
+        document.getElementById('platformBtn').addEventListener('click', async () => {
+            try {
+                console.log("[DEBUG] Get Platform button clicked.");
+                const platform = await eel.get_platform()();
+                alert(`Platform: ${platform}`);
+                console.log(`[DEBUG] Platform received: ${platform}`);
+            } catch (error) {
+                console.error(`[DEBUG] Error fetching platform: ${error}`);
+                alert("An error occurred while fetching the platform.");
+            }
+        });
     </script>
 </body>
 </html>
